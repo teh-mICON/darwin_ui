@@ -1,6 +1,7 @@
 module.exports = {
   lintOnSave: false,
   devServer: {
-      disableHostCheck: true
+      disableHostCheck: true,
+      port: 8080
   }
 }

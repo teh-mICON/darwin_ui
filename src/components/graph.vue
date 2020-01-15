@@ -43,13 +43,18 @@ export default Vue.extend({
 			enabled2D: false,
 			enabled3D: false,
 			clickedEdge: null,
-			clickedNode: null
+      clickedNode: null,
+      visNetwork: undefined
 		};
 	},
 
 	mounted() {
-		this.render();
-	},
+    if(this.visNetwork !== undefined){
+      this.visNetwork.destroy();
+      delete this.visNetwork
+    }
+    this.render();
+  },
 
 	watch: {
 		network() {
@@ -63,7 +68,7 @@ export default Vue.extend({
 			if (this.auto3D) this.graph3D();
 		},
 		graph2D() {
-			if (!this.network) return;
+      if (!this.network) return;
 			this.enabled2D = true;
 			this.render2D(this.$refs["graph2D"], this.network, this);
 		},
@@ -73,14 +78,19 @@ export default Vue.extend({
 			this.render3D(this.$refs["graph3D"], this.network, this);
 		},
 		render2D: async (element, network, vue) => {
+      if(vue.visNetwork !== undefined) {
+        vue.visNetwork.destroy();
+        delete vue.visNetwork
+      }
+
 			element.classList.remove("graph_hide");
 			element.classList.add("graph_show");
-			_.each(network.nodes, (node, index) => (node.index = index));
+			_.each(network.nodes, (node, index) => node.index = index);
 
 			const nodesRaw = _.map(network.nodes, (node, index) => {
         let border;
-				if (node.type == 'input') border = "#dbdd60";
-				if (node.type == 'hidden') border = "#92b6ce";
+				if (node.type == 'input') border = "#ffff00";
+				if (node.type == 'hidden') border = "#0000ff";
 				if (node.type == 'output') border = "#ffffff";
 
         const dec = denormalize(0, 255, node.activation);
@@ -88,17 +98,17 @@ export default Vue.extend({
         const color = "#" + hex + hex + hex;
 				const connectionMapper = connection => {
 					return {
-						from: connection.from.index,
-						to: connection.to.index,
+						from: connection.from,
+						to: connection.to,
 						weight: connection.weight
 					};
-				};
+        };
 				return {
 					id: node.index,
 					title: "" + node.index,
 					label: "" + node.index,
 					color: {
-						background: color,
+						background: border,
 						border,
 						highlight: "red"
 					},
@@ -121,8 +131,8 @@ export default Vue.extend({
 				const normalized = normalize(min, max, connection.weight);
 				const width = denormalize(1, 10, normalized);
 				return {
-					from: connection.from.index,
-					to: connection.to.index,
+					from: connection.from,
+					to: connection.to,
 					width,
 					arrows: "to",
 					color: connection.weight > 0 ? "green" : "red",
@@ -133,7 +143,7 @@ export default Vue.extend({
 
 			const options = {
 				autoResize: true,
-				height: "250px",
+				height: "350px",
 				width: "100%",
 				edges: {
 					smooth: {
@@ -143,16 +153,16 @@ export default Vue.extend({
 				},
 				layout: {
 					hierarchical: {
-						direction: 'LR',
+						direction: 'UD',
 						sortMethod: "directed"
 					}
 				},
 				physics: false
-			};
+      };
+      
+			vue.visNetwork = new vis.Network(element, { nodes, edges }, options);
 
-			const visNetwork = new vis.Network(element, { nodes, edges }, options);
-
-			visNetwork.on("click", properties => {
+			vue.visNetwork.on("click", properties => {
 				const nodeIds = properties.nodes;
 				const node = nodes.get(nodeIds)[0];
 
@@ -171,7 +181,7 @@ export default Vue.extend({
 				} else {
 					vue.clickedEdge = "";
 				}
-			});
+      });
 		},
 
 		async render3D(element, network, vue) {

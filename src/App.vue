@@ -1,86 +1,133 @@
 <template>
-	<div :key="frame">
-		<Graph :network="network" :auto2D="auto2D" :auto3D="auto3D" />
-		<div id="content">
-			<div class="d-flex flex-row flexatron">
-				<div class="controls">
-					<div
-						v-for="(item, index) in config.inputsLeft"
-						:key="'input_left_' + index"
-						class="input-group input-group-sm"
-					>
-						<div class="input-group-prepend" v-tooltip.right="item.tooltip">
-							<span class="input-group-text">{{item.caption}}</span>
-						</div>
-						<input type="text" class="form-control" v-input-model="'vizconfig_' + index" />
-					</div>
-				</div>
-				<div class="controls">
-					<div
-						v-for="(item, index) in config.inputsRight"
-						:key="'input_left_' + index"
-						class="input-group input-group-sm"
-					>
-						<div class="input-group-prepend" v-tooltip.left="item.tooltip">
-							<span class="input-group-text">{{item.caption}}</span>
-						</div>
-						<input type="text" class="form-control" v-input-model="'vizconfig_' + index" />
-					</div>
-				</div>
+	<div>
+		<div id="main_container">
+			<World
+				:currentSpecies="currentSpecies.id"
+				:uberSpecies="uber.id"
+				:width="width"
+				:height="height"
+			/>
+			<div id="human">
+				<input type="text" @keydown="humanControl" id="human_control" />
+				<span id="human_food" class="human_indicator">{{human.food}}</span>
+				<span id="human_water" class="human_indicator">{{human.water}}</span>
+				<span id="human_energy" class="human_indicator">{{human.energy}}</span>
+				<span id="human_age" class="human_indicator">{{human.age}}</span>
 			</div>
-			<div class="d-flex flex-row flexatron">
-				<div class="btn-group" role="group" aria-label="Basic example">
-					<button
-						v-for="(buttonConfig, name) in config.workers"
-						:key="'button_' + name"
-						:class="['btn', workerClass == name ? 'btn_blue_active' : 'btn_blue']"
-						@click="setWorker(name)"
-					>{{name}}</button>
+			<div>
+				<div>
+					<h2>Uber [{{uber.id}}: {{uber.age}}]</h2>
+					<Graph :network="uber.network" :auto2D="auto2D" :auto3D="auto3D" />
+				</div>
+				<div v-if="currentSpecies.id">
+					<h2>Selected [{{currentSpecies.id}}: {{currentSpecies.age}}]</h2>
+					<Graph :network="currentSpecies.network" :auto2D="auto2D" :auto3D="auto3D" />
 				</div>
 				<div class="input-group special">
 					<div class="input-group-prepend">
-						<button @click="goes()" class="btn btn_red" type="button">{{goescaption}}</button>
-						<button @click="save()" class="btn btn_green" type="button">SAVE</button>
-						<button @click="load()" class="btn btn_green" type="button">LOAD</button>
+						<button
+							@click="setCurrentSpecies(index)"
+							class="btn btn_blue"
+							type="button"
+							v-for="(data, index) in species"
+							:key="index"
+						>{{index}}</button>
 					</div>
 				</div>
-				<div class="form-group">
-					<div class="custom-control custom-switch">
-						<input type="checkbox" class="custom-control-input" id="autoswitch2d" v-model="auto2D" />
-						<label class="custom-control-label" for="autoswitch2d">auto render 2D</label>
+				<div id="content">
+					<div class="d-flex flex-row flexatron">
+						<div class="controls">
+							<div
+								v-for="(item, index) in config.inputsLeft"
+								:key="'input_left_' + index"
+								class="input-group input-group-sm"
+							>
+								<div class="input-group-prepend" v-tooltip.right="item.tooltip">
+									<span class="input-group-text">{{item.caption}}</span>
+								</div>
+								<input type="text" class="form-control" v-input-model="'vizconfig_' + index" />
+							</div>
+						</div>
+						<div class="controls">
+							<div
+								v-for="(item, index) in config.inputsRight"
+								:key="'input_left_' + index"
+								class="input-group input-group-sm"
+							>
+								<div class="input-group-prepend" v-tooltip.left="item.tooltip">
+									<span class="input-group-text">{{item.caption}}</span>
+								</div>
+								<input type="text" class="form-control" v-input-model="'vizconfig_' + index" />
+							</div>
+						</div>
 					</div>
-					<div class="custom-control custom-switch">
-						<input type="checkbox" class="custom-control-input" id="autoswitch3d" v-model="auto3D" />
-						<label class="custom-control-label" for="autoswitch3d">auto render 3D</label>
+					<div class="d-flex flex-row flexatron">
+						<div class="btn-group" role="group" aria-label="Basic example">
+							<button
+								v-for="(buttonConfig, name) in config.workers"
+								:key="'button_' + name"
+								:class="['btn', workerClass == name ? 'btn_blue_active' : 'btn_blue']"
+								@click="setWorker(name)"
+							>{{name}}</button>
+						</div>
+						<div class="input-group special">
+							<div class="input-group-prepend">
+								<button @click="goes()" class="btn btn_green" type="button">{{goescaption}}</button>
+								<button @click="reset()" class="btn btn_red" type="button">reset</button>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="custom-control custom-switch">
+								<input type="checkbox" class="custom-control-input" id="autoswitch2d" v-model="auto2D" />
+								<label class="custom-control-label" for="autoswitch2d">auto render 2D</label>
+							</div>
+							<div class="custom-control custom-switch">
+								<input type="checkbox" class="custom-control-input" id="autoswitch3d" v-model="auto3D" />
+								<label class="custom-control-label" for="autoswitch3d">auto render 3D</label>
+							</div>
+							<div class="custom-control custom-switch">
+								<input type="checkbox" class="custom-control-input" id="autogoes" v-model="autogoes" />
+								<label class="custom-control-label" for="autogoes">auto goes</label>
+							</div>
+						</div>
 					</div>
+					<div class="d-flex flex-row flexatron">
+						<table id="result">
+							<tr v-for="(result, index) in results" :key="index">
+								<td class="input">{{result.input.join(',')}}</td>
+								<td class="ideal">{{result.output.join(',')}}</td>
+								<td class="actual">{{result.actual.join(' ')}}</td>
+							</tr>
+						</table>
+						<table id="current">
+							<tr>
+								<th>time</th>
+								<td>{{elapsedTime / 1000}}s</td>
+							</tr>
+							<tr>
+								<th>generation</th>
+								<td>{{generation}}</td>
+							</tr>
+							<tr>
+								<th>score</th>
+								<td>{{uber.age}}</td>
+							</tr>
+						</table>
+					</div>
+					<div class="btn-group" role="group"></div>
+					<Scores :scores="scores" v-if="scores" />
+					<!--<h2>History</h2>
+      <div v-for="(event, index) in events" :key="index">
+        <div v-if="event.event == 'move' || event.event == 'turn'">
+          {{event.event}}: {{event.direction}}
+        </div>
+        <div v-else>
+          {{event}}
+        </div>
+					</div>-->
+					<!--<Genome :network="network" v-if="network" />-->
 				</div>
 			</div>
-			<div class="d-flex flex-row flexatron">
-				<table id="result">
-					<tr v-for="(result, index) in results" :key="index">
-						<td class="input">{{result.input.join(',')}}</td>
-						<td class="ideal">{{result.output.join(',')}}</td>
-						<td class="actual">{{result.actual.join(' ')}}</td>
-					</tr>
-				</table>
-				<table id="current">
-					<tr>
-						<th>time</th>
-						<td>{{elapsedTime}}s</td>
-					</tr>
-					<tr>
-						<th>epoch</th>
-						<td>{{epoch}}</td>
-					</tr>
-					<tr>
-						<th>score</th>
-						<td>{{score}}</td>
-					</tr>
-				</table>
-			</div>
-			<div class="btn-group" role="group"></div>
-			<Scores :scores="scores" v-if="scores" />
-			<Genome :network="network" v-if="network" />
 		</div>
 	</div>
 </template>
@@ -92,8 +139,10 @@ import Vue from "vue";
 import Graph from "./components/graph.vue";
 import GenomeComponent from "./components/genome.vue";
 import Scores from "./components/scores.vue";
+import World from "./components/world.vue";
 
 import utils from "./utils";
+import axios from "axios";
 
 let { Network } = require("@liquid-carrot/carrot");
 
@@ -132,25 +181,24 @@ const config = {
 		}
 	},
 	workers: {
-		mirror: {
-      architecture: [3, 7, 5, 4, 3]
-    },
-		X2: {},
-		AND: {},
-		OR: {},
-		XOR: {},
-		NAND: {},
-		NOR: {},
-    XNOR: {}
+		darwin: {}
 	}
 };
 
 // reactive local storage wrapper
 const dataItems = {};
 const watchItems = {};
-const wrap = (name, default_, prefix = true) => {
-  if(prefix) name = 'vizconfig_' + name;
-	dataItems[name] = localStorage.getItem(name) || default_;
+const wrap = (name, default_, prefix = true, transform = null) => {
+	if (prefix) name = "vizconfig_" + name;
+	if (localStorage.getItem(name) === null) {
+		dataItems[name] = default_;
+	} else {
+		if (transform !== null) {
+			dataItems[name] = transform(localStorage.getItem(name));
+		} else {
+			dataItems[name] = localStorage.getItem(name);
+		}
+	}
 	watchItems[name] = value => {
 		localStorage.setItem(name, value);
 	};
@@ -158,6 +206,9 @@ const wrap = (name, default_, prefix = true) => {
 _.each(config.inputsLeft, (item, name) => wrap(name, item.default));
 _.each(config.inputsRight, (item, name) => wrap(name, item.default));
 wrap("activeWorker", Object.keys(config.workers)[0], false);
+wrap("autogoes", false, false, value => JSON.parse(value));
+wrap("auto2D", false, false, value => JSON.parse(value));
+wrap("auto3D", false, false, value => JSON.parse(value));
 
 export default Vue.extend({
 	name: "app",
@@ -165,120 +216,203 @@ export default Vue.extend({
 	components: {
 		Graph,
 		Genome: GenomeComponent,
-		Scores
+		Scores,
+		World
 	},
 
 	data() {
 		return {
+			currentSpecies: {
+				id: null,
+				network: null,
+				age: null
+			},
+			species: {},
 			results: [],
+			uber: {
+				id: null,
+				age: null,
+				network: null
+			},
+			human: {
+				food: "",
+				water: "",
+				energy: "",
+				age: ""
+			},
+			uberHistory: [],
 			scores: [],
-			network: null,
 			genome: null,
+			humanWorker: null,
 			worker: null,
-			frame: 0,
 			score: 0,
 			epoch: 0,
 			startTime: new Date(),
 			elapsedTime: 0,
-			auto2D: true,
-			auto3D: false,
+			generation: 0,
 			status: "idle",
 			goescaption: "goes",
+			width: 200,
+			height: 200,
 			config,
 			workerClass: null, // for button class reactivity
 			...dataItems
 		};
 	},
-	watch: watchItems,
+	watch: {
+		...watchItems
+	},
+
 	async created() {
 		document.title = "nn-viz";
 
-		if (!this.activeWorker) this.setWorker(Object.keys(config.workers)[0]);
-		else this.setWorker(this.activeWorker);
+		this.setWorker("darwin");
+		this.initHuman();
 	},
 	methods: {
-    reset() {
-			this.status = "idle";
-      this.goescaption = "goes";
-      this.score = 0;
-      this.scores = [];
-      this.frame++;
-    },
+		initHuman() {
+			const path = import("worker-loader!./workers/human.js").then(worker => {
+				// launch worker
+				this.humanWorker = worker.default();
+				this.humanWorker.onmessage = message => {
+					const creature = message.data.creature;
+					this.human.food = _.repeat("|", Math.floor(creature.food));
+					this.human.water = _.repeat("|", Math.floor(creature.water));
+          this.human.energy = _.repeat("|", Math.floor(creature.energy / 10));
+          this.human.age = creature.age;
+				};
+			});
+		},
+		humanControl(event) {
+			event.preventDefault();
+			this.humanWorker.postMessage({
+				key: event.keyCode
+			});
+		},
+		toast(type, message) {
+			this.$toasted.show(message, { type, duration: 3000 });
+		},
+
+		msg_spawn(message) {
+			this.toast("success", "* Spawned species: " + message.data.id);
+			Vue.set(this.species, message.data.id, {});
+		},
+
+		msg_cull(message) {
+			this.toast("success", "💀 Culled species: " + message.data.species);
+			_.each(message.data.species, species => {
+				delete this.species[species];
+			});
+		},
+
+		msg_apex(message) {
+			this.toast(
+				"success",
+				"☝️ Apex species created: " +
+					message.data.parents +
+					" -> " +
+					message.data.id
+			);
+		},
+
+		msg_hybrid(message) {
+			this.toast(
+				"success",
+				"-><- Hybrid species created: " + message.data.parents
+			);
+		},
+
+		msg_uber(message) {
+			this.toast("success", "🔝 uber: " + message.data.age);
+
+			this.uber.id = message.data.id;
+			this.uber.age = message.data.age;
+			this.uber.network = Object.freeze(message.data.network);
+
+			// empty and refill scores array
+			while (this.scores.length) {
+				this.scores.splice(0, 1);
+			}
+			_.each(message.data.history, step => {
+				this.scores.push(step.age);
+			});
+		},
+
+		msg_elite(message) {
+			// toast the message details
+			this.toast(
+				"success",
+				`[👑: ${message.data.id}] elite replace: ${message.data.eliteLevel}: ${message.data.age}`
+			);
+		},
+
+		msg_update(message) {
+			Vue.set(this.species, message.data.id, Object.freeze(message.data.elite));
+		},
+
+		msg_error(message) {
+			this.toast("error", message.data.message);
+		},
+
+		msg_status(message) {
+			this.elapsedTime = message.data.elapsedTime;
+			this.generation = message.data.generation;
+		},
 
 		setWorker(name) {
+			const ctx = this;
 			if (this.worker) {
 				this.worker.terminate();
-      }
-      this.reset();
+			}
 
 			this.activeWorker = name;
 			this.workerClass = name;
+
+			// import worker
 			const path = import("worker-loader!./workers/" + name + ".js").then(
 				worker => {
+					// launch worker
 					this.worker = worker.default();
+
+					// worker incoming message handling
 					this.worker.onmessage = message => {
-						if (message.data.event == "update") {
-							this.elapsedTime =
-								(new Date().getTime() - this.startTime.getTime()) / 1000;
-              this.updateEpoch(message.data.epoch);
-              const network = Network.fromJSON(message.data.network);
-              _.each(message.data.network.nodes, (node, index) => network.nodes[index].activation = node.activation);
-							this.updateNetwork(network);
-							this.updateScore(message.data.score);
-							this.updateResults(message.data.results);
-						}
+						const handler = this["msg_" + message.data.event].bind(this);
+						handler(message);
 					};
 
-					this.worker.postMessage({ event: "initialize", config: config.workers[name] });
+					// initialize worker
+					this.worker.postMessage({
+						event: "initialize",
+						config: config.workers[name]
+					});
+
+					// goes?
+					if (this.autogoes) this.goes();
 				}
 			);
 		},
 
-		updateNetwork(network) {
-			this.network = network;
-		},
-		updateEpoch(epoch) {
-			this.epoch = epoch;
-		},
-		updateScore(score) {
-			this.score = score;
-			this.scores.push(score);
-		},
-		updateResults(results) {
-			this.results = results;
-		},
-
-		updateDisplay(epoch, network, score) {
-			this.epoch = epoch;
-			this.MSE = score;
-			this.network = network;
-			this.scores.push(score);
-			//this.results = results.results;
-			if (this.scores.length > 100) this.scores.splice(0, 1);
-			this.frame++;
-		},
-
-		goes() {
+		async goes() {
 			switch (this.status) {
 				case "idle":
 					this.status = "running";
-          this.goescaption = "pause";
+					this.goescaption = "pause";
 
-          // create event config
-          const goesConfig = {
-            event: 'goes'
-          };
-          // add configurations of input elements
-          const addToConfig = (name) => {
-            goesConfig[name] = this['vizconfig_' + name];
-          };
-          _.each(config.inputsLeft, (item, name) => addToConfig(name));
-          _.each(config.inputsRight, (item, name) => addToConfig(name));
+					// create event config
+					const goesConfig = {
+						event: "goes"
+					};
+					// add configurations of input elements
+					const addToConfig = name => {
+						goesConfig[name] = this["vizconfig_" + name];
+					};
+					_.each(config.inputsLeft, (item, name) => addToConfig(name));
+					_.each(config.inputsRight, (item, name) => addToConfig(name));
 
-          // post to worker
+					// post to worker
 					this.worker.postMessage({
-            event: "goes",
-            ...goesConfig
+						event: "goes",
+						...goesConfig
 					});
 					this.startTime = new Date();
 					break;
@@ -298,30 +432,22 @@ export default Vue.extend({
 					break;
 			}
 		},
+		save(key, value) {
+			axios.post("http://localhost:8081/set/" + key, value);
+		},
+
+		async load(key) {
+			const response = await axios.get("http://localhost:8081/get/" + key);
+			return JSON.parse(response.data);
+		},
 
 		buttonClass(name) {
 			if (name == this.activeWorker) return "btn btn-info";
 			return "btn btn-secondary";
 		},
-		save() {
-			if (!this.network)
-				return this.$toasted.show("no network to save", {
-					type: "error",
-					duration: 3000
-				});
-
-			localStorage.network = JSON.stringify(this.network.toJSON());
-		},
-		load() {
-			if (!localStorage.getItem("network"))
-				return this.$toasted.show("no saved network", {
-					type: "error",
-					duration: 3000
-        });
-			this.worker.postMessage({
-				event: "load",
-				network: JSON.parse(localStorage.network)
-			});
+		reset() {
+			axios.get("http://localhost:8081/reset");
+			window.location = window.location;
 		}
 	},
 	beforeDestroy() {
@@ -446,23 +572,52 @@ html .input-group-text {
 }
 
 html .btn_green {
-  background-color: #506e50;
-  color: white;
+	background-color: #506e50;
+	color: white;
 }
 html .btn_blue {
-  background-color: #505e6e;
-  color: white;
+	background-color: #505e6e;
+	color: white;
 }
 html .btn_blue_active {
-  background-color: lighten(#505e6e, 20%);
-  color: white;
+	background-color: lighten(#505e6e, 20%);
+	color: white;
 }
 html .btn_red {
-  background-color: #6e5050;
-  color: white;
+	background-color: #6e5050;
+	color: white;
 }
 html .btn_outline_green {
-  border: 2px solid #506e50;
-  color: white;
+	border: 2px solid #506e50;
+	color: white;
+}
+body h2 {
+	color: #ddd;
+}
+#main_container {
+	display: flex;
+}
+#human {
+	border: 1px solid red;
+}
+.human_indicator {
+	display: block;
+}
+#human_water {
+	color: blue;
+}
+#human_food {
+	color: brown;
+}
+#human_energy {
+	color: green;
+}
+#human_control {
+	border: 1px solid white;
+  color: transparent;
+}
+#human_control:focus {
+	outline: none;
+  background: white;
 }
 </style>

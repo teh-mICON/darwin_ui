@@ -1,13 +1,10 @@
 <template>
 	<div>
 		<TrendChart
-			:datasets="datasets"
-			:grid="{
-     verticalLines: true,
-     horizontalLines: true
-  }"
-			:min="0"
 			v-if="this.scores.length > 1"
+			:datasets="datasets"
+			:grid="grid"
+			:min="0"
 			:labels="labels"
 			id="trend"
 		></TrendChart>
@@ -25,6 +22,10 @@ export default Vue.extend({
 	props: ["scores"],
 	data() {
 		return {
+			grid: {
+				verticalLines: true,
+				horizontalLines: true
+			},
 			chart: this.scores,
 			gradient: ["#F00", "#0F0"],
 			datasets: [{ data: this.scores, fill: true, className: "score_chart" }],
@@ -34,21 +35,18 @@ export default Vue.extend({
 			}
 		};
 	},
-
 	mounted() {}
 });
 </script>
 
 <style>
-
-
 #trend {
 	height: 300px;
 }
 
 #trend .label text {
-  fill: white;
-  font-size: 10px;
+	fill: white;
+	font-size: 10px;
 }
 
 #trend .stroke {
