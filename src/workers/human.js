@@ -1,7 +1,6 @@
 import _ from 'lodash'
 export default class Actor {
   constructor() {
-    this.speciesId = 'human';
     this.callback = () => {
       console.log('YOU DED')
     };
@@ -26,14 +25,14 @@ export default class Actor {
   }
   connect() {
     try {
-      this.ws = new WebSocket('ws://localhost:3000');
+      this.ws = new WebSocket('ws://localhost:8000');
       this.ws.onclose = event => {
         this.connect();
         this.callback(this);
       }
       this.ws.onopen = event => {
         try {
-          this.send('init', { speciesId: this.speciesId })
+          this.send('init', { raceID: 'human-human' })
         } catch (error) {
           return;
         }

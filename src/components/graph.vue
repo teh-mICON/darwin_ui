@@ -9,7 +9,7 @@
 	</div>
 </template>
 
-<script lang="ts">
+<script>
 import Vue from "vue";
 import ForceGraph3D from "3d-force-graph";
 import vis from "vis-network";
@@ -123,10 +123,8 @@ export default Vue.extend({
 			});
 			const nodes = new vis.DataSet(nodesRaw);
 
-			const max = _.maxBy(network.connections, connection => connection.weight)
-				.weight;
-			const min = _.minBy(network.connections, connection => connection.weight)
-				.weight;
+			const max = _.maxBy(network.connections, connection => connection.weight).weight;
+			const min = _.minBy(network.connections, connection => connection.weight).weight;
 			const edgesRaw = network.connections.map(connection => {
 				const normalized = normalize(min, max, connection.weight);
 				const width = denormalize(1, 10, normalized);
@@ -163,11 +161,11 @@ export default Vue.extend({
 			vue.visNetwork = new vis.Network(element, { nodes, edges }, options);
 
 			vue.visNetwork.on("click", properties => {
-				const nodeIds = properties.nodes;
-				const node = nodes.get(nodeIds)[0];
+				const nodeIDs = properties.nodes;
+				const node = nodes.get(nodeIDs)[0];
 
-				const edgeIds = properties.edges;
-				const edge = edges.get(edgeIds)[0];
+				const edgeIDs = properties.edges;
+				const edge = edges.get(edgeIDs)[0];
 
 				if (node && node.custom) {
 					vue.clickedNode = format(beautify(node.custom, null, 2, 100));

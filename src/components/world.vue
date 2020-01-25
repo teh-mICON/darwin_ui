@@ -27,14 +27,14 @@ const tileSize = 4;
 
 export default {
 	mixins: [],
-	props: ["currentSpecies", "uberSpecies", "width", "height"],
+	props: ["selectedRace", "uberRace", "width", "height"],
 	data() {
 		return {
 			type: null,
 			send: false,
 			tileSize,
-			speciesColors: {},
-      edit: false,
+			raceColors: {},
+      edit: true,
       grid: false
 		};
 	},
@@ -68,12 +68,12 @@ export default {
 			const y = Math.floor((event.clientY - rect.top) / tileSize);
 			if (this.type == "remove") {
 				axios
-					.get("http://localhost:8082/remove_tile?x=" + x + "&y=" + y)
+					.get("http://localhost:8002/remove_tile?x=" + x + "&y=" + y)
 					.then(() => {});
 			} else {
 				axios
 					.get(
-						"http://localhost:8082/add_tile?x=" +
+						"http://localhost:8002/add_tile?x=" +
 							x +
 							"&y=" +
 							y +
@@ -83,11 +83,11 @@ export default {
 					.then(() => {});
 			}
 		},
-		getCreatureColor(speciesId) {
-			if (this.speciesColors[speciesId] === undefined) {
-				this.speciesColors[speciesId] = randomcolor();
+		getCreatureColor(raceID) {
+			if (this.raceColors[raceID] === undefined) {
+				this.raceColors[raceID] = randomcolor();
 			}
-			return this.speciesColors[speciesId];
+			return this.raceColors[raceID];
 		},
 		loop() {
 			setTimeout(() => {
@@ -98,7 +98,7 @@ export default {
 			if (!canvas) return;
 			const ctx = canvas.getContext("2d");
 
-			axios.get("http://localhost:8082/world").then(result => {
+			axios.get("http://localhost:8002/world").then(result => {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				const width = 200;
 				const height = 200;
@@ -136,21 +136,19 @@ export default {
 					const y = tile.y * tileSize;
 					if (tile.type == "water") ctx.fillStyle = "blue";
 					else if (tile.type == "tree") ctx.fillStyle = "brown";
-					else if (tile.type == "mountain") ctx.fillStyle = "purple";
+					else if (tile.type == "mountain") ctx.fillStyle = "black";
 					else if (tile.type == "hive") ctx.fillStyle = "green";
 					else if (tile.type == "creature") {
-						if (tile.speciesId == "human") {
+            if(tile.raceID == "human-human") {
+              ctx.fillStyle = 'red'
+            } else if(tile.speciesID == 'carrot') {
+              ctx.fillStyle = 'orange';
+            } else if(tile.speciesID == 'sonic') {
+              ctx.fillStyle = 'yellow'
+            }
+            
+            if (tile.age == oldest) {
 							ctx.fillStyle = "red";
-						} else if (tile.age == oldest) {
-							ctx.fillStyle = "purple";
-						} else {
-							if (tile.speciesId == this.currentSpecies) {
-								ctx.fillStyle = "purple";
-							} else if (tile.speciesId == this.uberSpecies) {
-								ctx.fillStyle = "orange";
-							} else {
-								ctx.fillStyle = "yellow";
-							}
 						}
 					}
 
