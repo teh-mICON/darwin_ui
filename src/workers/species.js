@@ -30,7 +30,7 @@ class SocketWrap {
   }
 }
 
-const wrapper = new SocketWrap('ws://localhost:8003');
+const wrapper = new SocketWrap('ws://localhost:8004');
 wrapper.setHandler('message', message => {
   self.postMessage(JSON.parse(message.data))
 });

@@ -1,11 +1,8 @@
 <template>
 	<div>
+		<button @click="prev" value="prev">prev</button>
+		<button @click="next" value="next">next</button>
 		<div ref="graph2D" id="graph2D" class="graph_hide"></div>
-		<button @click="graph2D" class="btn btn_green btn-sm">render 2D</button>
-		<div ref="graph3D" id="graph3D" class="graph_hide"></div>
-		<button @click="graph3D" class="btn btn_green btn-sm">render 3D</button>
-		<pre v-html="clickedNode" class="json_small"></pre>
-		<pre v-html="clickedEdge" class="json_small"></pre>
 	</div>
 </template>
 
@@ -22,9 +19,9 @@ import Color from "color";
 import utils from "../utils";
 
 const NETVIS_COLORS = {
-	input: "#4b8c48",
-	hidden: "#48688c",
-	action: "#b80f0f"
+	input: "#333",
+	hidden: "#111",
+	action: "#777"
 };
 
 function normalize(low, high, value) {
@@ -37,38 +34,48 @@ function denormalize(low, high, value) {
 export default Vue.extend({
 	name: "vis",
 
-	props: ["network", "auto2D", "auto3D"],
+	props: ["network", "trace", "map", "auto2D", "auto3D"],
 	data() {
 		return {
 			enabled2D: false,
 			enabled3D: false,
 			clickedEdge: null,
-      clickedNode: null,
-      visNetwork: undefined
+			clickedNode: null,
+			visNetwork: undefined,
+			current: 0
 		};
 	},
 
 	mounted() {
-    if(this.visNetwork !== undefined){
-      this.visNetwork.destroy();
-      delete this.visNetwork
-    }
-    this.render();
-  },
+		if (this.visNetwork !== undefined) {
+			this.visNetwork.destroy();
+			delete this.visNetwork;
+		}
+		this.render();
+	},
 
 	watch: {
 		network() {
+			this.render();
+		},
+		current() {
 			this.render();
 		}
 	},
 
 	methods: {
+		next() {
+			this.current++;
+		},
+		prev() {
+			this.current--;
+		},
 		render() {
 			if (this.auto2D) this.graph2D();
 			if (this.auto3D) this.graph3D();
 		},
 		graph2D() {
-      if (!this.network) return;
+			if (!this.network) return;
 			this.enabled2D = true;
 			this.render2D(this.$refs["graph2D"], this.network, this);
 		},
@@ -78,38 +85,47 @@ export default Vue.extend({
 			this.render3D(this.$refs["graph3D"], this.network, this);
 		},
 		render2D: async (element, network, vue) => {
-      if(vue.visNetwork !== undefined) {
-        vue.visNetwork.destroy();
-        delete vue.visNetwork
-      }
+			if (vue.visNetwork !== undefined) {
+				vue.visNetwork.destroy();
+				delete vue.visNetwork;
+			}
+
+			const currentStep = vue.trace[vue.current];
+				let currentNode, currentConnection;
+			if (currentStep) {
+				if (currentStep.event == "activation") {
+					currentNode = vue.map[currentStep.node];
+        } else if(currentStep.event == 'fire') {
+          currentConnection = {from: vue.map[currentStep.connection.from], to: vue.map[currentStep.connection.to]};
+        }
+        console.log(currentStep)
+			}
 
 			element.classList.remove("graph_hide");
 			element.classList.add("graph_show");
 			//_.each(network.nodes, (node, index) => node.index = index);
 
 			const nodesRaw = _.map(network.nodes, (node, index) => {
-        let border;
-				if (node.type == 'input') border = "#ffff00";
-				if (node.type == 'hidden') border = "#0000ff";
-				if (node.type == 'output') border = "#ffffff";
-
-        const dec = denormalize(0, 255, node.activation);
-        const hex = Converter.decToHex("" + Math.round(dec), { prefix: false });
-        const color = "#" + hex + hex + hex;
+				let color;
+				if (node.type == "input") color = NETVIS_COLORS.input;
+				else if (node.type == "hidden") color = NETVIS_COLORS.input;
+				else if (node.type == "output") color = NETVIS_COLORS.action;
 				const connectionMapper = connection => {
 					return {
 						from: connection.from,
 						to: connection.to,
 						weight: connection.weight
 					};
-        };
+				};
 				return {
 					id: node.index,
 					title: "" + node.index,
 					label: "" + node.index,
 					color: {
-						background: border,
-						border,
+						background: currentNode == node.index ? "white" : color,
+						border: currentNode == node.index ? "white" : color,
+						text: "white",
+						label: "white",
 						highlight: "red"
 					},
 					custom: {
@@ -123,17 +139,25 @@ export default Vue.extend({
 			});
 			const nodes = new vis.DataSet(nodesRaw);
 
-			const max = _.maxBy(network.connections, connection => connection.weight).weight;
-			const min = _.minBy(network.connections, connection => connection.weight).weight;
+			const max = _.maxBy(network.connections, connection => connection.weight)
+				.weight;
+			const min = _.minBy(network.connections, connection => connection.weight)
+				.weight;
 			const edgesRaw = network.connections.map(connection => {
 				const normalized = normalize(min, max, connection.weight);
-				const width = denormalize(1, 10, normalized);
+        const width = denormalize(1, 10, normalized);
+        let color;
+        if(currentConnection && connection.from == currentConnection.from && connection.to == currentConnection.to) {
+          color = "white"
+        } else {
+          color = connection.type == "excite" ? "#333" : "#aaa"
+        }
 				return {
 					from: connection.from,
 					to: connection.to,
 					width,
 					arrows: "to",
-					color: connection.weight > 0 ? "green" : "red",
+					color,
 					custom: { connection }
 				};
 			});
@@ -141,7 +165,7 @@ export default Vue.extend({
 
 			const options = {
 				autoResize: true,
-				height: "1350px",
+				height: "800px",
 				width: "100%",
 				edges: {
 					smooth: {
@@ -151,13 +175,13 @@ export default Vue.extend({
 				},
 				layout: {
 					hierarchical: {
-						direction: 'UD',
+						direction: "UD",
 						sortMethod: "directed"
 					}
 				},
 				physics: false
-      };
-      
+			};
+
 			vue.visNetwork = new vis.Network(element, { nodes, edges }, options);
 
 			vue.visNetwork.on("click", properties => {
@@ -179,7 +203,7 @@ export default Vue.extend({
 				} else {
 					vue.clickedEdge = "";
 				}
-      });
+			});
 		},
 
 		async render3D(element, network, vue) {

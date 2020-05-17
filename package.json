@@ -2,7 +2,6 @@
   "name": "darwin_ui",
   "version": "0.1.0",
   "private": false,
-  "license": "MIT",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build"
@@ -39,11 +38,12 @@
     "vue-trend-chart": "^0.15.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.1.0",
-    "@vue/cli-service": "^4.1.0",
+    "@vue/cli-plugin-babel": "^4.1.2",
+    "@vue/cli-service": "^4.1.2",
     "node-sass": "^4.12.0",
     "sass-loader": "^8.0.0",
     "vue-template-compiler": "^2.6.11",
     "worker-loader": "^2.0.0"
-  }
+  },
+  "license": "MIT"
 }

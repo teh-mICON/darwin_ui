@@ -1,7 +1,7 @@
 <template>
-	<div>
+	<div class="trend_container">
 		<TrendChart
-			id="trend"
+			class="trend"
 			v-if="dataset.data"
 			:datasets="[dataset]"
 			:grid="grid"
@@ -33,7 +33,7 @@ import prettyms from "pretty-ms";
 export default Vue.extend({
 	name: "scores",
 
-	props: ["uberHistory"],
+	props: ["scores"],
 	data() {
 		return {
 			grid: {
@@ -63,18 +63,25 @@ export default Vue.extend({
 		},
     getElapsedPointTime() {
       return prettyms(this.pointData.elapsedTime)
+    },
+
+    translateScores(history) {
+      this.dataset.data = _.map(history, step => {
+				return { value: step.score, step };
+			});
+			this.labels.xLabels = _.map(history, (step) => step.generation)//prettyms(step.elapsedTime));
     }
 	},
-	computed: {},
+  computed: {},
+  created() {
+    this.translateScores(this.scores);
+  },
 	mounted() {
 		Vue.set(this, "dataset");
 	},
 	watch: {
-		uberHistory(history) {
-			this.dataset.data = _.map(history, step => {
-				return { value: step.age, step };
-			});
-			this.labels.xLabels = _.map(history, step => prettyms(step.elapsedTime));
+		scores(history) {
+      this.translateScores(history);
 		}
 	},
 	mounted() {}
@@ -82,20 +89,23 @@ export default Vue.extend({
 </script>
 
 <style>
-#trend {
+.trend_container {
+  margin: 10px;
+}
+.trend {
 	height: 300px;
 }
 
-#trend .label text {
+.trend .label text {
 	fill: white;
 	font-size: 10px;
 }
 
-#trend .stroke {
+.trend .stroke {
 	stroke: #46828d;
 	stroke-width: 2;
 }
-#trend .fill {
+.trend .fill {
 	fill: #46828d;
 	fill-opacity: 0.1;
 }

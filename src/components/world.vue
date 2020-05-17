@@ -1,5 +1,12 @@
 <template>
-	<div>
+	<div id="world_container">
+		<div v-if="edit">
+			<button @click="setTile('water')" id="tile_water"></button>
+			<button @click="setTile('tree')" id="tile_tree"></button>
+			<button @click="setTile('hive')" id="tile_hive"></button>
+			<button @click="setTile('mountain')" id="tile_mountain"></button>
+			<button @click="setTile('remove')" id="tile_remove"></button>
+		</div>
 		<canvas
 			id="world"
 			:width="width*tileSize"
@@ -9,12 +16,22 @@
 			@mouseup="stopSend"
 			@mousemove="move"
 		></canvas>
-		<div v-if="edit">
-			<button @click="setTile('water')" id="tile_water"></button>
-			<button @click="setTile('tree')" id="tile_tree"></button>
-			<button @click="setTile('hive')" id="tile_hive"></button>
-			<button @click="setTile('mountain')" id="tile_mountain"></button>
-			<button @click="setTile('remove')" id="tile_remove"></button>
+		<div v-if="oldest !== null" class="oldest">
+			Oldest: {{oldest.speciesID}}/{{oldest.id}} : {{oldest.age}}
+			<br />
+			Actions: {{Math.round(oldest.actions)}}
+			<br />
+			APM: {{Math.round(oldest.apm)}}
+			<br />Energy:
+			<span class="energy">{{pipes(oldest.energy)}}</span>
+			<br />Food:
+			<span class="food">{{pipes(oldest.food)}}</span>
+			<br />Water:
+			<span class="water">{{pipes(oldest.water)}}</span>
+			<br />
+			<span class="energy">{{Math.round(oldest.energy)}}</span> ::
+			<span class="food">{{Math.round(oldest.food)}}</span> ::
+			<span class="water">{{Math.round(oldest.water)}}</span>
 		</div>
 	</div>
 </template>
@@ -30,15 +47,19 @@ export default {
 	props: ["selectedRace", "uberRace", "width", "height"],
 	data() {
 		return {
+			oldest: null,
 			type: null,
 			send: false,
 			tileSize,
 			raceColors: {},
-      edit: true,
-      grid: false
+			edit: false,
+			grid: false
 		};
 	},
 	methods: {
+		pipes(num) {
+			if (Math.round(num) > 0) return "|".repeat(Math.round(num));
+		},
 		setTile(type) {
 			this.type = type;
 		},
@@ -66,14 +87,17 @@ export default {
 			const rect = canvas.getBoundingClientRect();
 			const x = Math.floor((event.clientX - rect.left) / tileSize);
 			const y = Math.floor((event.clientY - rect.top) / tileSize);
+			const port = +window.location.search.substring(1) + 3;
 			if (this.type == "remove") {
 				axios
-					.get("http://localhost:8002/remove_tile?x=" + x + "&y=" + y)
+					.get("http://localhost:" + port + "/remove_tile?x=" + x + "&y=" + y)
 					.then(() => {});
 			} else {
 				axios
 					.get(
-						"http://localhost:8002/add_tile?x=" +
+						"http://localhost:" +
+							port +
+							"/add_tile?x=" +
 							x +
 							"&y=" +
 							y +
@@ -98,7 +122,8 @@ export default {
 			if (!canvas) return;
 			const ctx = canvas.getContext("2d");
 
-			axios.get("http://localhost:8002/world").then(result => {
+			const port = +window.location.search.substring(1) + 3;
+			axios.get("http://localhost:" + port + "/world").then(result => {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				const width = 200;
 				const height = 200;
@@ -124,11 +149,11 @@ export default {
 
 				// find oldest
 				const creatures = _.filter(
-					_.filter(result.data, tile => tile.type == "creature")
+					result.data,
+					tile => tile.type == "creature"
 				);
-				let oldest = 0;
 				if (creatures.length) {
-					oldest = _.maxBy(creatures, creature => creature.age).age;
+					this.oldest = _.maxBy(creatures, creature => creature.age);
 				}
 
 				_.each(result.data, tile => {
@@ -139,16 +164,15 @@ export default {
 					else if (tile.type == "mountain") ctx.fillStyle = "black";
 					else if (tile.type == "hive") ctx.fillStyle = "green";
 					else if (tile.type == "creature") {
-            if(tile.raceID == "human-human") {
-              ctx.fillStyle = 'red'
-            } else if(tile.speciesID == 'carrot') {
-              ctx.fillStyle = 'orange';
-            } else if(tile.speciesID == 'sonic') {
-              ctx.fillStyle = 'yellow'
-            }
-            
-            if (tile.age == oldest) {
+						if (tile.id == this.oldest.id) {
+							ctx.beginPath();
+							ctx.arc(x + 2, y + 2, 20, 0, 2 * Math.PI);
+							ctx.strokeStyle = "red";
+							ctx.stroke();
+
 							ctx.fillStyle = "red";
+						} else {
+							ctx.fillStyle = "yellow";
 						}
 					}
 
@@ -158,7 +182,6 @@ export default {
 
 					ctx.beginPath();
 					if (tile.type == "creature") {
-						if (tile.age == oldest) ctx.fillStyle = "red";
 						switch (tile.facing) {
 							case "up":
 								ctx.moveTo(x, y);
@@ -206,6 +229,9 @@ export default {
 </script>
 
 <style>
+#world_container {
+	padding: 10px;
+}
 #world {
 	background: #ddd;
 }
@@ -238,5 +264,18 @@ export default {
 	border: 1px solid white;
 	width: 20px;
 	height: 20px;
+}
+
+.oldest {
+	max-width: 500px;
+}
+.energy {
+	color: yellow;
+}
+.water {
+	color: blue;
+}
+.food {
+	color: brown;
 }
 </style>

@@ -1,7 +1,8 @@
 <template>
 	<div>
+    <h2>{{species}}</h2>
 		<div>
-			<h2>Uber [{{uber.id}}: {{uber.age}}]</h2>
+			<h3>Uber [{{uber.id}}: {{uber.age}}]</h3>
 			<Graph :network="uber.network" :auto2D="auto2D" :auto3D="auto3D" />
 		</div>
 		<table id="current">
@@ -19,6 +20,7 @@
 			</tr>
 		</table>
 		<Scores :uberHistory="uberHistory" v-if="uberHistory.length > 0"/>
+      {{races}}
 	</div>
 </template>
 
@@ -32,7 +34,7 @@ import Graph from "./graph.vue";
 export default {
 	name: "species",
 	mixins: [],
-	props: ["bus", "auto2D", "auto3D"],
+	props: ["species", "bus", "auto2D", "auto3D"],
 	components: { Graph, Scores },
 	data() {
 		return {
@@ -66,6 +68,7 @@ export default {
 		});
 
 		this.bus.$on("uber", data => {
+      console.log('UBER COMP ON', this.species)
 			this.uber.id = data.id;
 			this.uber.age = data.age;
       this.uber.network = Object.freeze(data.network);
@@ -77,7 +80,6 @@ export default {
     })
 
     this.bus.$on('status', data => {
-      console.log('ST', data)
 			this.elapsedTime = data.elapsedTime;
 			this.generation = data.generation;
     })

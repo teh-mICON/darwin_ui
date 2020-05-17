@@ -1,7 +1,7 @@
 module.exports = {
   devServer: {
     disableHostCheck: true,
-    port: 8004,
+    port: 8080,
     clientLogLevel: "silent",
     before: function(app, server, compiler) {
       console.log('configbefore')
